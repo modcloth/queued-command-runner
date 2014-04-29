@@ -21,9 +21,10 @@ Then, in your code:
 package main
 
 // package name is "qcr"
+import "github.com/modcloth/queued-command-runner"
+
 import (
   "fmt"
-  "github.com/modcloth/queued-command-runner"
   "os"
   "os/exec"
 )
