@@ -27,6 +27,7 @@ clean:
 
 .PHONY: build
 build: linkthis deps
+	go install $(TARGETS)
 
 .PHONY: test
 test: build fmtpolice ginkgo
