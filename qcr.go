@@ -1,6 +1,7 @@
 package qcr
 
 import (
+	//"errors"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -24,6 +25,20 @@ the bottom of main():
 */
 var Done = make(chan bool)
 
+/*
+Error is the channel that qcr will use to report any errors that occur.
+*/
+var Errors = make(chan *QCRError)
+
+/*
+QCRError is a custom error type that includes CommandStr, the command args of
+the command that failed.
+*/
+type QCRError struct {
+	CommandStr string
+	error
+}
+
 type runner struct {
 	queue *structures.Queue
 	*sync.Mutex
@@ -44,6 +59,10 @@ func (r *runner) start() {
 			r.Unlock()
 
 			if err := cmd.Run(); err != nil {
+				Errors <- &QCRError{
+					error:      err,
+					CommandStr: r.key,
+				}
 				fmt.Printf("OOPS, qcr encountered an error for %q: %q\n", r.key, err)
 			}
 		}
