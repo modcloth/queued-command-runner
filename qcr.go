@@ -1,7 +1,6 @@
 package qcr
 
 import (
-	//"errors"
 	"fmt"
 	"os/exec"
 	"strings"
