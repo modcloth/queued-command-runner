@@ -15,7 +15,7 @@ import (
 
 func main() {
 	//setup tmpdir
-	tmp, err := ioutil.TempDir("", "qcr")
+	tmp, err := ioutil.TempDir("", "runner")
 	if err != nil {
 		gocleanup.Exit(1)
 	}
@@ -56,7 +56,7 @@ echo end >&2
 			Stdout: os.Stdout,
 		}
 
-		qcr.Run(cmd)
+		runner.Run(cmd)
 	}
 
 	for x := 0; x < 5; x++ {
@@ -66,11 +66,11 @@ echo end >&2
 			Stdout: os.Stdout,
 		}
 
-		qcr.Run(cmd)
+		runner.Run(cmd)
 	}
 
 	// wait for commands to finish
-	<-qcr.Done
+	<-runner.Done
 
 	gocleanup.Exit(0)
 }

@@ -1,4 +1,4 @@
-package qcr_test
+package runner_test
 
 import (
 	. "github.com/onsi/ginkgo"

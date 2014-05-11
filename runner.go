@@ -1,4 +1,4 @@
-package qcr
+package runner
 
 import (
 	"fmt"
