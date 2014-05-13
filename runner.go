@@ -75,7 +75,7 @@ func (r *runner) enqueue(cmd *exec.Cmd) {
 }
 
 //Run runs your command.
-func Run(cmd *exec.Cmd) error {
+func Run(cmd *exec.Cmd) {
 	tmLock.Lock()
 	defer tmLock.Unlock()
 
@@ -87,8 +87,6 @@ func Run(cmd *exec.Cmd) error {
 	} else {
 		tm[key].enqueue(cmd)
 	}
-
-	return nil
 }
 
 func newRunner(cmd *exec.Cmd) *runner {
