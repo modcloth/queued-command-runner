@@ -1,3 +1,46 @@
+/*
+Package runner runs distinct commands in parallel goroutines while queueing
+indistinct commands so they're never run twice at the same time (but all get run eventually).
+
+Simply send your command to runner and let it do the rest!
+
+
+Example usage:
+
+  package main
+
+  import "github.com/modcloth/queued-command-runner"
+
+  import (
+  	"fmt"
+  	"os"
+  	"os/exec"
+  )
+
+  func main() {
+  	fmt.Println("Running a command now.")
+
+  	pwd := os.Getenv("PWD")
+
+  	cmd := exec.Command("ls", "-la", pwd)
+  	cmd.Stdout = os.Stdout
+  	cmd.Stderr = os.Stderr
+
+  	runner.Run(&cmd)
+
+  	WaitOnRunner:
+  	for {
+  		select {
+  		case <-runner.Done:
+  			break WaitOnRunner
+		case err := <-runner.Errors:
+			fmt.Printf("Uh oh, got an error: %q\n", err)
+  		}
+  	}
+
+  	os.Exit(0)
+  }
+*/
 package runner
 
 import (
@@ -20,7 +63,8 @@ Done is qcr's exit channel - if you use qcr, you MUST wait on Done to ensure
 your commands get run.  This can be accomplished by including the following at
 the bottom of main():
 
-  <-qcr.Done
+  <-runner.Done
+
 */
 var Done = make(chan bool)
 
