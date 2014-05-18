@@ -79,6 +79,7 @@ the command that failed.
 */
 type QCRError struct {
 	CommandStr string
+	Key        string
 	error
 }
 
@@ -112,6 +113,17 @@ func (r *runner) start() {
 	}
 }
 
+/*
+Command is a small wrapper for *exec.Cmd so that a custom key may be specified.  If no key
+is specified (i.e. Key == ""), key is defaulted to the following:
+
+	key = strings.Join(cmd.Cmd.Args, " ")
+*/
+type Command struct {
+	Key string
+	Cmd *exec.Cmd
+}
+
 func (r *runner) enqueue(cmd *exec.Cmd) {
 	r.Lock()
 	defer r.Unlock()
@@ -119,17 +131,21 @@ func (r *runner) enqueue(cmd *exec.Cmd) {
 }
 
 //Run runs your command.
-func Run(cmd *exec.Cmd) {
+func Run(cmd *Command) {
 	tmLock.Lock()
 	defer tmLock.Unlock()
 
-	key := strings.Join(cmd.Args, " ")
+	key := cmd.Key
+
+	if key == "" {
+		key = strings.Join(cmd.Cmd.Args, " ")
+	}
 
 	if tm[key] == nil {
-		tm[key] = newRunner(cmd)
+		tm[key] = newRunner(cmd.Cmd)
 		go tm[key].start()
 	} else {
-		tm[key].enqueue(cmd)
+		tm[key].enqueue(cmd.Cmd)
 	}
 }
 

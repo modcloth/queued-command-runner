@@ -50,20 +50,24 @@ echo end >&2
 	}
 
 	for x := 0; x < 5; x++ {
-		cmd := &exec.Cmd{
-			Path:   scriptPath,
-			Args:   []string{"foo"},
-			Stdout: os.Stdout,
+		cmd := &runner.Command{
+			Cmd: &exec.Cmd{
+				Path:   scriptPath,
+				Args:   []string{"foo"},
+				Stdout: os.Stdout,
+			},
 		}
 
 		runner.Run(cmd)
 	}
 
 	for x := 0; x < 5; x++ {
-		cmd := &exec.Cmd{
-			Path:   scriptPath2,
-			Args:   []string{"foo2"},
-			Stdout: os.Stdout,
+		cmd := &runner.Command{
+			Cmd: &exec.Cmd{
+				Path:   scriptPath2,
+				Args:   []string{"foo2"},
+				Stdout: os.Stdout,
+			},
 		}
 
 		runner.Run(cmd)
