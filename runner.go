@@ -22,11 +22,14 @@ Example usage:
 
   	pwd := os.Getenv("PWD")
 
-  	cmd := exec.Command("ls", "-la", pwd)
-  	cmd.Stdout = os.Stdout
-  	cmd.Stderr = os.Stderr
+	ls := exec.Command("ls", "-la", pwd)
+	ls.Stdout = os.Stdout
+	ls.Stderr = os.Stderr
+	cmd := &runner.Command{
+		Cmd: ls,
+	}
 
-  	runner.Run(&cmd)
+	runner.Run(cmd)
 
   	WaitOnRunner:
   	for {
@@ -44,7 +47,6 @@ Example usage:
 package runner
 
 import (
-	"fmt"
 	"os/exec"
 	"strings"
 	"sync"
@@ -95,7 +97,6 @@ func (r *runner) start() {
 		cmd := r.queue.Poll()
 		if cmd == nil {
 			destroyRunner(r)
-			//r.Unlock() //should this be here?
 			break
 		} else {
 			cmd := cmd.(*exec.Cmd)
@@ -107,7 +108,6 @@ func (r *runner) start() {
 					error:      err,
 					CommandStr: r.key,
 				}
-				fmt.Printf("OOPS, qcr encountered an error for %q: %q\n", r.key, err)
 			}
 		}
 	}
@@ -135,26 +135,26 @@ func Run(cmd *Command) {
 	tmLock.Lock()
 	defer tmLock.Unlock()
 
-	key := cmd.Key
-
-	if key == "" {
-		key = strings.Join(cmd.Cmd.Args, " ")
+	if cmd.Key == "" {
+		cmd.Key = strings.Join(cmd.Cmd.Args, " ")
 	}
 
+	key := cmd.Key
+
 	if tm[key] == nil {
-		tm[key] = newRunner(cmd.Cmd)
+		tm[key] = newRunner(cmd)
 		go tm[key].start()
 	} else {
 		tm[key].enqueue(cmd.Cmd)
 	}
 }
 
-func newRunner(cmd *exec.Cmd) *runner {
+func newRunner(cmd *Command) *runner {
 	q := structures.NewQueue()
-	q.Push(cmd)
+	q.Push(cmd.Cmd)
 
 	ret := &runner{
-		key:   strings.Join(cmd.Args, " "),
+		key:   cmd.Key,
 		Mutex: &sync.Mutex{},
 		queue: q,
 	}
