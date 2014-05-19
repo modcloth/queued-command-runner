@@ -22,11 +22,14 @@ Example usage:
 
   	pwd := os.Getenv("PWD")
 
-  	cmd := exec.Command("ls", "-la", pwd)
-  	cmd.Stdout = os.Stdout
-  	cmd.Stderr = os.Stderr
+	ls := exec.Command("ls", "-la", pwd)
+	ls.Stdout = os.Stdout
+	ls.Stderr = os.Stderr
+	cmd := &runner.Command{
+		Cmd: ls,
+	}
 
-  	runner.Run(&cmd)
+	runner.Run(cmd)
 
   	WaitOnRunner:
   	for {
