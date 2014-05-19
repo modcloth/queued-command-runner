@@ -44,7 +44,6 @@ Example usage:
 package runner
 
 import (
-	"fmt"
 	"os/exec"
 	"strings"
 	"sync"
@@ -106,7 +105,6 @@ func (r *runner) start() {
 					error:      err,
 					CommandStr: r.key,
 				}
-				fmt.Printf("OOPS, qcr encountered an error for %q: %q\n", r.key, err)
 			}
 		}
 	}
