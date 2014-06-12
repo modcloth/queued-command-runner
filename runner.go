@@ -50,15 +50,27 @@ import (
 	"os/exec"
 	"strings"
 	"sync"
-)
 
-import (
+	"github.com/Sirupsen/logrus"
 	structures "github.com/hishboy/gocommons/lang"
 )
 
 // tm for "Treasure Map"
 var tm = make(map[string]*runner)
 var tmLock = &sync.Mutex{}
+var logger = logrus.New()
+
+func init() {
+	logger.Formatter = &logrus.JSONFormatter{}
+	logger.Level = logrus.Info // default to Info
+}
+
+/*
+SetLogLevel sets the log level (from Sirupsen/logrus) on queued-command-runner's internal logger
+*/
+func SetLogLevel(level logrus.Level) {
+	logger.Level = level
+}
 
 /*
 Done is qcr's exit channel - if you use qcr, you MUST wait on Done to ensure
@@ -96,6 +108,10 @@ func (r *runner) start() {
 		r.Lock()
 		cmd := r.queue.Poll()
 		if cmd == nil {
+			logger.WithFields(logrus.Fields{
+				"key": r.key,
+			}).Debug("no command available for runner, destroying runner")
+
 			destroyRunner(r)
 			break
 		} else {
@@ -104,6 +120,11 @@ func (r *runner) start() {
 			r.Unlock()
 
 			if err := cmd.Run(); err != nil {
+				logger.WithFields(logrus.Fields{
+					"key":   r.key,
+					"error": err,
+				}).Error("error running command, notifying on Errors channel")
+
 				Errors <- &QCRError{
 					error:      err,
 					CommandStr: r.key,
@@ -141,10 +162,22 @@ func Run(cmd *Command) {
 
 	key := cmd.Key
 
+	logger.WithFields(logrus.Fields{
+		"key": key,
+	}).Info("runner received run request")
+
 	if tm[key] == nil {
+		logger.WithFields(logrus.Fields{
+			"key": key,
+		}).Debug("creating new runner for key")
+
 		tm[key] = newRunner(cmd)
 		go tm[key].start()
 	} else {
+		logger.WithFields(logrus.Fields{
+			"key": key,
+		}).Debug("runner for key already exists, enqueueing")
+
 		tm[key].enqueue(cmd.Cmd)
 	}
 }
@@ -166,11 +199,17 @@ func destroyRunner(r *runner) {
 	defer tmLock.Unlock()
 
 	if r.queue.Len() != 0 {
-		panic("HOW THE HELL DID YOU GET HERE?!?!")
+		logger.WithFields(logrus.Fields{
+			"key": r.key,
+		}).Panic("HOW THE HELL DID YOU GET HERE?!?!")
 	}
 
 	delete(tm, r.key)
 	if len(tm) == 0 {
+		logger.WithFields(logrus.Fields{
+			"key": r.key,
+		}).Debug("after deleting key, map is empty, notifying on Done channel")
+
 		Done <- true
 	}
 }
