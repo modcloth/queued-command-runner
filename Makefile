@@ -4,12 +4,10 @@ DOCKER ?= docker
 Q := github.com/modcloth/queued-command-runner
 TARGETS := $(Q)/qcr
 
-GINKGO_PATH ?= "."
-GOPATH := $(PWD)/Godeps/_workspace
+GOPATH := $(shell echo $${GOPATH%%:*})
 GOBIN := $(GOPATH)/bin
-PATH := $(GOPATH):$(PATH)
+PATH := $(GOBIN):$(PATH)
 
-export GINKGO_PATH
 export GOPATH
 export GOBIN
 export PATH
@@ -22,23 +20,14 @@ all: clean build test
 .PHONY: clean
 clean:
 	go clean -i -r $(TARGETS) || true
-	rm -rf $${GOPATH%%:*}/src/github.com/modcloth/queued-command-runner
-	rm -rf Godeps/_workspace/*
+	rm -f $(GOBIN)/qcr
 
 .PHONY: build
-build: linkthis deps
+build: deps
 	go install $(TARGETS)
 
 .PHONY: test
-test: build fmtpolice ginkgo
-
-.PHONY: linkthis
-linkthis:
-	@echo "gvm linkthis'ing this..."
-	@if which gvm >/dev/null && \
-	  [[ ! -d $${GOPATH%%:*}/src/github.com/modcloth/queued-command-runner ]] ; then \
-	  gvm linkthis github.com/modcloth/queued-command-runner ; \
-	  fi
+test: build fmtpolice
 
 .PHONY: godep
 godep:
@@ -49,8 +38,6 @@ deps: godep
 	@echo "godep restoring..."
 	$(GOBIN)/godep restore
 	go get github.com/golang/lint/golint
-	go get github.com/onsi/ginkgo/ginkgo
-	go get github.com/onsi/gomega
 
 .PHONY: fmtpolice
 fmtpolice: deps fmt lint
@@ -83,12 +70,6 @@ lintv:
 	@echo "----------"
 	@for file in $(shell git ls-files '*.go') ; do $(GOBIN)/golint $$file ; done
 
-.PHONY: ginkgo
-ginkgo:
-	@echo "----------"
-	@if [[ "$(GINKGO_PATH)" == "." ]] ; then \
-	  echo "$(GOBIN)/ginkgo -nodes=10 -noisyPendings -race -r ." && \
-	  $(GOBIN)/ginkgo -nodes=10 -noisyPendings -race -r . ; \
-	  else echo "$(GOBIN)/ginkgo -nodes=10 -noisyPendings -race --v $(GINKGO_PATH)" && \
-	  $(GOBIN)/ginkgo -nodes=10 -noisyPendings -race --v $(GINKGO_PATH) ; \
-	  fi
+.PHONY: save
+save:
+	godep save -copy=false ./...
