@@ -56,18 +56,15 @@ import (
 
 // tm for "Treasure Map"
 var tm = make(map[string]*runner)
-var logger = logrus.New()
+
+// Logger is the logger used by the runner package.  It is initialized in the
+// init() function so it may be overwritten any time after that.
+var Logger *logrus.Logger
 
 func init() {
-	logger.Formatter = &logrus.JSONFormatter{}
-	logger.Level = logrus.Info // default to Info
-}
-
-/*
-SetLogLevel sets the log level (from Sirupsen/logrus) on queued-command-runner's internal logger
-*/
-func SetLogLevel(level logrus.Level) {
-	logger.Level = level
+	Logger = logrus.New()
+	Logger.Formatter = &logrus.TextFormatter{}
+	Logger.Level = logrus.Info
 }
 
 /*
@@ -104,7 +101,7 @@ func (r *runner) start() {
 	for {
 		cmd := r.queue.Poll()
 		if cmd == nil {
-			logger.WithFields(logrus.Fields{
+			Logger.WithFields(logrus.Fields{
 				"key": r.key,
 			}).Debug("no command available for runner, destroying runner")
 
@@ -114,7 +111,7 @@ func (r *runner) start() {
 			cmd := cmd.(*exec.Cmd)
 
 			if err := cmd.Run(); err != nil {
-				logger.WithFields(logrus.Fields{
+				Logger.WithFields(logrus.Fields{
 					"key":   r.key,
 					"error": err,
 				}).Error("error running command, notifying on Errors channel")
@@ -151,19 +148,19 @@ func Run(cmd *Command) {
 
 	key := cmd.Key
 
-	logger.WithFields(logrus.Fields{
+	Logger.WithFields(logrus.Fields{
 		"key": key,
 	}).Info("runner received run request")
 
 	if tm[key] == nil {
-		logger.WithFields(logrus.Fields{
+		Logger.WithFields(logrus.Fields{
 			"key": key,
 		}).Debug("creating new runner for key")
 
 		tm[key] = newRunner(cmd)
 		go tm[key].start()
 	} else {
-		logger.WithFields(logrus.Fields{
+		Logger.WithFields(logrus.Fields{
 			"key": key,
 		}).Debug("runner for key already exists, enqueueing")
 
@@ -184,14 +181,14 @@ func newRunner(cmd *Command) *runner {
 
 func destroyRunner(r *runner) {
 	if r.queue.Len() != 0 {
-		logger.WithFields(logrus.Fields{
+		Logger.WithFields(logrus.Fields{
 			"key": r.key,
 		}).Panic("HOW THE HELL DID YOU GET HERE?!?!")
 	}
 
 	delete(tm, r.key)
 	if len(tm) == 0 {
-		logger.WithFields(logrus.Fields{
+		Logger.WithFields(logrus.Fields{
 			"key": r.key,
 		}).Debug("after deleting key, map is empty, notifying on Done channel")
 
