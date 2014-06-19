@@ -49,7 +49,6 @@ package runner
 import (
 	"os/exec"
 	"strings"
-	"sync"
 
 	"github.com/Sirupsen/logrus"
 	structures "github.com/hishboy/gocommons/lang"
@@ -57,7 +56,6 @@ import (
 
 // tm for "Treasure Map"
 var tm = make(map[string]*runner)
-var tmLock = &sync.Mutex{}
 var logger = logrus.New()
 
 func init() {
@@ -99,13 +97,11 @@ type QCRError struct {
 
 type runner struct {
 	queue *structures.Queue
-	*sync.Mutex
-	key string
+	key   string
 }
 
 func (r *runner) start() {
 	for {
-		r.Lock()
 		cmd := r.queue.Poll()
 		if cmd == nil {
 			logger.WithFields(logrus.Fields{
@@ -116,8 +112,6 @@ func (r *runner) start() {
 			break
 		} else {
 			cmd := cmd.(*exec.Cmd)
-
-			r.Unlock()
 
 			if err := cmd.Run(); err != nil {
 				logger.WithFields(logrus.Fields{
@@ -146,16 +140,11 @@ type Command struct {
 }
 
 func (r *runner) enqueue(cmd *exec.Cmd) {
-	r.Lock()
-	defer r.Unlock()
 	r.queue.Push(cmd)
 }
 
 //Run runs your command.
 func Run(cmd *Command) {
-	tmLock.Lock()
-	defer tmLock.Unlock()
-
 	if cmd.Key == "" {
 		cmd.Key = strings.Join(cmd.Cmd.Args, " ")
 	}
@@ -188,16 +177,12 @@ func newRunner(cmd *Command) *runner {
 
 	ret := &runner{
 		key:   cmd.Key,
-		Mutex: &sync.Mutex{},
 		queue: q,
 	}
 	return ret
 }
 
 func destroyRunner(r *runner) {
-	tmLock.Lock()
-	defer tmLock.Unlock()
-
 	if r.queue.Len() != 0 {
 		logger.WithFields(logrus.Fields{
 			"key": r.key,
