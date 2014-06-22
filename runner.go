@@ -150,7 +150,7 @@ func Run(cmd *Command) {
 
 	Logger.WithFields(logrus.Fields{
 		"key": key,
-	}).Info("runner received run request")
+	}).Debug("runner received run request")
 
 	if tm[key] == nil {
 		Logger.WithFields(logrus.Fields{
